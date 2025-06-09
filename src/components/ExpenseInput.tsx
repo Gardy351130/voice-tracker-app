@@ -2,21 +2,21 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, Plus } from 'lucide-react';
-import { type Expense, type BudgetData } from '@/utils/budgetUtils';
+import { Mic, MicOff, Plus } from 'lucide-react';
+import { type Expense, type BucketData } from '@/utils/budgetUtils';
 
 interface ExpenseInputProps {
   onAddExpense: (expense: Expense) => void;
-  budgetData: BudgetData;
+  budgetData: BucketData;
 }
 
 const ExpenseInput = ({ onAddExpense, budgetData }: ExpenseInputProps) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'needs' | 'wants' | 'future'>('needs');
-  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const handleAddExpense = () => {
     if (!amount || !description) return;
@@ -32,84 +32,116 @@ const ExpenseInput = ({ onAddExpense, budgetData }: ExpenseInputProps) => {
     onAddExpense(expense);
     setAmount('');
     setDescription('');
+    setCategory('needs');
   };
 
-  const handleVoiceInput = () => {
+  const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Speech recognition not supported in this browser');
       return;
     }
 
-    setIsRecording(true);
-    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     
-    recognition.onresult = (event) => {
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setDescription(transcript);
-      setIsRecording(false);
     };
 
     recognition.onerror = () => {
-      setIsRecording(false);
+      setIsListening(false);
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
+      setIsListening(false);
     };
 
     recognition.start();
   };
 
+  const getBucketStatus = (bucketCategory: 'needs' | 'wants' | 'future') => {
+    const bucket = budgetData[bucketCategory];
+    const percentage = bucket.allocated > 0 ? (bucket.spent / bucket.allocated) * 100 : 0;
+    return {
+      remaining: bucket.remaining,
+      percentage: Math.min(percentage, 100)
+    };
+  };
+
   return (
     <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-      <CardContent className="p-6">
-        <div className="space-y-4">
-          <div className="flex gap-3">
-            <Input
-              type="number"
-              placeholder="Amount ($)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-32"
-            />
-            <Input
-              placeholder="Or type your expense here..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleVoiceInput}
-              variant={isRecording ? "destructive" : "outline"}
-              size="icon"
-              className={isRecording ? "animate-pulse" : ""}
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-          </div>
+      <CardHeader>
+        <CardTitle className="text-slate-700">Add Expense</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            type="number"
+            placeholder="Amount"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+          <Select value={category} onValueChange={(value: 'needs' | 'wants' | 'future') => setCategory(value)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="needs">Needs</SelectItem>
+              <SelectItem value="wants">Wants</SelectItem>
+              <SelectItem value="future">Future</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div className="flex gap-3">
-            <Select value={category} onValueChange={(value: 'needs' | 'wants' | 'future') => setCategory(value)}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="needs">Needs</SelectItem>
-                <SelectItem value="wants">Wants</SelectItem>
-                <SelectItem value="future">Future</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Button 
-              onClick={handleAddExpense}
-              className="bg-green-500 hover:bg-green-600 text-white flex items-center gap-2"
-              disabled={!amount || !description}
-            >
-              <Plus className="h-4 w-4" />
-              Add
-            </Button>
-          </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="flex-1"
+          />
+          <Button
+            onClick={startListening}
+            variant="outline"
+            size="icon"
+            className={isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        <Button 
+          onClick={handleAddExpense}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+          disabled={!amount || !description}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Expense
+        </Button>
+
+        {/* Budget Status */}
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium text-slate-700">Budget Status</h4>
+          {(['needs', 'wants', 'future'] as const).map((bucket) => {
+            const status = getBucketStatus(bucket);
+            return (
+              <div key={bucket} className="flex justify-between items-center text-sm">
+                <span className="capitalize">{bucket}:</span>
+                <span className={status.remaining >= 0 ? 'text-green-600' : 'text-red-600'}>
+                  ${status.remaining.toFixed(2)} remaining
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

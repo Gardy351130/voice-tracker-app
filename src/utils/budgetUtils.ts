@@ -25,7 +25,7 @@ export interface BucketData {
   };
 }
 
-export const calculateBudgetAllocations = (salary: number, expenses: Expense[]): BudgetData => {
+export const calculateBudgetAllocations = (salary: number, expenses: Expense[]): BucketData => {
   const needsAllocated = salary * 0.5;
   const wantsAllocated = salary * 0.3;
   const futureAllocated = salary * 0.2;
@@ -61,20 +61,20 @@ export const calculateBudgetAllocations = (salary: number, expenses: Expense[]):
   };
 };
 
-export const generateCSV = (expenses: Expense[], salary: number, budgetData: BudgetData): string => {
+export const generateCSV = (expenses: Expense[], salary: number, bucketData: BucketData): string => {
   const headers = ['Date', 'Description', 'Amount', 'Category'];
   const summaryHeaders = ['Budget Summary', '', '', ''];
   const summary = [
     ['Salary', '', salary.toString(), ''],
-    ['Needs Allocated', '', budgetData.needs.allocated.toFixed(2), ''],
-    ['Needs Spent', '', budgetData.needs.spent.toFixed(2), ''],
-    ['Needs Remaining', '', budgetData.needs.remaining.toFixed(2), ''],
-    ['Wants Allocated', '', budgetData.wants.allocated.toFixed(2), ''],
-    ['Wants Spent', '', budgetData.wants.spent.toFixed(2), ''],
-    ['Wants Remaining', '', budgetData.wants.remaining.toFixed(2), ''],
-    ['Future Allocated', '', budgetData.future.allocated.toFixed(2), ''],
-    ['Future Spent', '', budgetData.future.spent.toFixed(2), ''],
-    ['Future Remaining', '', budgetData.future.remaining.toFixed(2), ''],
+    ['Needs Allocated', '', bucketData.needs.allocated.toFixed(2), ''],
+    ['Needs Spent', '', bucketData.needs.spent.toFixed(2), ''],
+    ['Needs Remaining', '', bucketData.needs.remaining.toFixed(2), ''],
+    ['Wants Allocated', '', bucketData.wants.allocated.toFixed(2), ''],
+    ['Wants Spent', '', bucketData.wants.spent.toFixed(2), ''],
+    ['Wants Remaining', '', bucketData.wants.remaining.toFixed(2), ''],
+    ['Future Allocated', '', bucketData.future.allocated.toFixed(2), ''],
+    ['Future Spent', '', bucketData.future.spent.toFixed(2), ''],
+    ['Future Remaining', '', bucketData.future.remaining.toFixed(2), ''],
     ['', '', '', '']
   ];
 
@@ -95,8 +95,8 @@ export const generateCSV = (expenses: Expense[], salary: number, budgetData: Bud
   return allRows.map(row => row.join(',')).join('\n');
 };
 
-export const getWeeklySummary = (expenses: Expense[]): Record<string, { total: number; count: number }> => {
-  const summary: Record<string, { total: number; count: number }> = {};
+export const getWeeklySummary = (expenses: Expense[]): Record<string, { total: number; count: number; byCategory: { needs: number; wants: number; future: number } }> => {
+  const summary: Record<string, { total: number; count: number; byCategory: { needs: number; wants: number; future: number } }> = {};
 
   expenses.forEach(expense => {
     const date = new Date(expense.date);
@@ -105,11 +105,16 @@ export const getWeeklySummary = (expenses: Expense[]): Record<string, { total: n
     const weekKey = `Week of ${weekStart.toLocaleDateString()}`;
 
     if (!summary[weekKey]) {
-      summary[weekKey] = { total: 0, count: 0 };
+      summary[weekKey] = { 
+        total: 0, 
+        count: 0, 
+        byCategory: { needs: 0, wants: 0, future: 0 }
+      };
     }
 
     summary[weekKey].total += expense.amount;
     summary[weekKey].count += 1;
+    summary[weekKey].byCategory[expense.category] += expense.amount;
   });
 
   return summary;
