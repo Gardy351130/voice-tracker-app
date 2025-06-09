@@ -1,4 +1,3 @@
-
 export interface Expense {
   id: string;
   amount: number;
@@ -118,4 +117,41 @@ export const getWeeklySummary = (expenses: Expense[]): Record<string, { total: n
   });
 
   return summary;
+};
+
+export const getDescriptionSuggestions = (input: string, expenses: Expense[]): string[] => {
+  if (input.length < 2) return [];
+
+  const previousDescriptions = expenses.map(e => e.description.toLowerCase());
+  const suggestions = new Set<string>();
+
+  // Find exact matches and similar descriptions
+  previousDescriptions.forEach(desc => {
+    if (desc.includes(input.toLowerCase()) || input.toLowerCase().includes(desc)) {
+      suggestions.add(expenses.find(e => e.description.toLowerCase() === desc)?.description || '');
+    }
+  });
+
+  // Common mappings
+  const commonMappings: Record<string, string[]> = {
+    'food': ['Groceries', 'Restaurant', 'Fast Food'],
+    'power': ['Electricity', 'Electric Bill'],
+    'gas': ['Gasoline', 'Gas Bill'],
+    'rent': ['Rent Payment', 'Housing'],
+    'car': ['Car Payment', 'Auto Insurance'],
+    'phone': ['Phone Bill', 'Mobile Service'],
+    'internet': ['Internet Bill', 'WiFi'],
+    'water': ['Water Bill', 'Utilities'],
+    'coffee': ['Coffee Shop', 'Starbucks'],
+    'movie': ['Movies', 'Cinema'],
+    'gym': ['Gym Membership', 'Fitness'],
+  };
+
+  Object.keys(commonMappings).forEach(key => {
+    if (input.toLowerCase().includes(key) || key.includes(input.toLowerCase())) {
+      commonMappings[key].forEach(suggestion => suggestions.add(suggestion));
+    }
+  });
+
+  return Array.from(suggestions).filter(s => s.length > 0).slice(0, 5);
 };

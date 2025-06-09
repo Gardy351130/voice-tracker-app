@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import SalaryInput from '@/components/SalaryInput';
 import ExpenseInput from '@/components/ExpenseInput';
 import BucketChart from '@/components/BucketChart';
 import ExpenseHistory from '@/components/ExpenseHistory';
-import { calculateBudgetAllocations, type Expense, type BudgetData } from '@/utils/budgetUtils';
+import { calculateBudgetAllocations, type Expense, type BucketData } from '@/utils/budgetUtils';
 
 const Index = () => {
   const [salary, setSalary] = useState<number>(0);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [budgetData, setBudgetData] = useState<BudgetData>({
+  const [budgetData, setBudgetData] = useState<BucketData>({
     needs: { allocated: 0, spent: 0, remaining: 0 },
     wants: { allocated: 0, spent: 0, remaining: 0 },
     future: { allocated: 0, spent: 0, remaining: 0 }
@@ -48,6 +47,7 @@ const Index = () => {
             <ExpenseInput 
               onAddExpense={handleAddExpense}
               budgetData={budgetData}
+              expenses={expenses}
             />
           </div>
 

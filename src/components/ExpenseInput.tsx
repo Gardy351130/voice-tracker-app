@@ -1,22 +1,23 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mic, MicOff, Plus } from 'lucide-react';
-import { type Expense, type BucketData } from '@/utils/budgetUtils';
+import { type Expense, type BucketData, getDescriptionSuggestions } from '@/utils/budgetUtils';
 
 interface ExpenseInputProps {
   onAddExpense: (expense: Expense) => void;
   budgetData: BucketData;
+  expenses: Expense[];
 }
 
-const ExpenseInput = ({ onAddExpense, budgetData }: ExpenseInputProps) => {
+const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'needs' | 'wants' | 'future'>('needs');
   const [isListening, setIsListening] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const handleAddExpense = () => {
     if (!amount || !description) return;
@@ -33,6 +34,22 @@ const ExpenseInput = ({ onAddExpense, budgetData }: ExpenseInputProps) => {
     setAmount('');
     setDescription('');
     setCategory('needs');
+    setSuggestions([]);
+  };
+
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    if (value.length >= 2) {
+      const newSuggestions = getDescriptionSuggestions(value, expenses);
+      setSuggestions(newSuggestions);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const selectSuggestion = (suggestion: string) => {
+    setDescription(suggestion);
+    setSuggestions([]);
   };
 
   const startListening = () => {
@@ -102,21 +119,38 @@ const ExpenseInput = ({ onAddExpense, budgetData }: ExpenseInputProps) => {
           </Select>
         </div>
 
-        <div className="flex gap-2">
-          <Input
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="flex-1"
-          />
-          <Button
-            onClick={startListening}
-            variant="outline"
-            size="icon"
-            className={isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
-          >
-            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          </Button>
+        <div className="relative">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Description (e.g., food, power, gas)"
+              value={description}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={startListening}
+              variant="outline"
+              size="icon"
+              className={isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
+            >
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          {/* Suggestions dropdown */}
+          {suggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-12 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 transition-colors text-sm"
+                  onClick={() => selectSuggestion(suggestion)}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <Button 
