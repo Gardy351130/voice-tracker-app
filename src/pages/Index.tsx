@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import SalaryInput from '@/components/SalaryInput';
 import ExpenseInput from '@/components/ExpenseInput';
 import BucketChart from '@/components/BucketChart';
 import ExpenseHistory from '@/components/ExpenseHistory';
+import DailyMotivationPopup from '@/components/DailyMotivationPopup';
 import { calculateBudgetAllocations, type Expense, type BucketData } from '@/utils/budgetUtils';
 
 const Index = () => {
@@ -67,6 +69,9 @@ const Index = () => {
           budgetData={budgetData}
         />
       </div>
+      
+      {/* Daily Motivation Popup */}
+      <DailyMotivationPopup />
     </div>
   );
 };
