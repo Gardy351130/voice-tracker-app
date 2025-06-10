@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps)
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'needs' | 'wants' | 'future'>('needs');
-  const [isListening, setIsListening] = useState(false);
+  const [isListening, setIsListening] = useState<'amount' | 'description' | 'category' | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   const handleAddExpense = () => {
@@ -52,7 +53,7 @@ const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps)
     setSuggestions([]);
   };
 
-  const startListening = () => {
+  const startListening = (field: 'amount' | 'description' | 'category') => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert('Speech recognition not supported in this browser');
       return;
@@ -66,20 +67,42 @@ const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps)
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
-      setIsListening(true);
+      setIsListening(field);
     };
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setDescription(transcript);
+      const transcript = event.results[0][0].transcript.toLowerCase().trim();
+      
+      if (field === 'amount') {
+        // Extract numbers from speech
+        const numberMatch = transcript.match(/\d+(?:\.\d+)?/);
+        if (numberMatch) {
+          setAmount(numberMatch[0]);
+        }
+      } else if (field === 'description') {
+        setDescription(transcript);
+        if (transcript.length >= 2) {
+          const newSuggestions = getDescriptionSuggestions(transcript, expenses);
+          setSuggestions(newSuggestions);
+        }
+      } else if (field === 'category') {
+        // Map speech to categories
+        if (transcript.includes('need') || transcript.includes('essential')) {
+          setCategory('needs');
+        } else if (transcript.includes('want') || transcript.includes('wish') || transcript.includes('entertainment')) {
+          setCategory('wants');
+        } else if (transcript.includes('future') || transcript.includes('saving') || transcript.includes('investment')) {
+          setCategory('future');
+        }
+      }
     };
 
     recognition.onerror = () => {
-      setIsListening(false);
+      setIsListening(null);
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      setIsListening(null);
     };
 
     recognition.start();
@@ -101,22 +124,44 @@ const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps)
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="number"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-          <Select value={category} onValueChange={(value: 'needs' | 'wants' | 'future') => setCategory(value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="needs">Needs</SelectItem>
-              <SelectItem value="wants">Wants</SelectItem>
-              <SelectItem value="future">Future</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              onClick={() => startListening('amount')}
+              variant="outline"
+              size="icon"
+              className={isListening === 'amount' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
+            >
+              {isListening === 'amount' ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={category} onValueChange={(value: 'needs' | 'wants' | 'future') => setCategory(value)}>
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="needs">Needs</SelectItem>
+                <SelectItem value="wants">Wants</SelectItem>
+                <SelectItem value="future">Future</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={() => startListening('category')}
+              variant="outline"
+              size="icon"
+              className={isListening === 'category' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
+            >
+              {isListening === 'category' ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
 
         <div className="relative">
@@ -128,12 +173,12 @@ const ExpenseInput = ({ onAddExpense, budgetData, expenses }: ExpenseInputProps)
               className="flex-1"
             />
             <Button
-              onClick={startListening}
+              onClick={() => startListening('description')}
               variant="outline"
               size="icon"
-              className={isListening ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
+              className={isListening === 'description' ? 'bg-red-500 hover:bg-red-600 text-white' : ''}
             >
-              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isListening === 'description' ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
           </div>
           
