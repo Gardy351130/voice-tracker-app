@@ -45,7 +45,7 @@ const BucketChart = ({ budgetData, salary }: BucketChartProps) => {
           </p>
         </div>
 
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={150}>
           <PieChart>
             <Pie
               data={data}
