@@ -5,7 +5,10 @@ import ExpenseInput from '@/components/ExpenseInput';
 import BucketChart from '@/components/BucketChart';
 import ExpenseHistory from '@/components/ExpenseHistory';
 import DailyMotivationPopup from '@/components/DailyMotivationPopup';
-import { calculateBudgetAllocations, type Expense, type BucketData } from '@/utils/budgetUtils';
+import WeeklySummaryDialog from '@/components/WeeklySummaryDialog';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import { calculateBudgetAllocations, type Expense, type BucketData, generateCSV } from '@/utils/budgetUtils';
 
 const Index = () => {
   const [salary, setSalary] = useState<number>(0);
@@ -60,6 +63,30 @@ const Index = () => {
               salary={salary}
             />
           </div>
+        </div>
+
+        {/* Central Action Buttons */}
+        <div className="flex justify-center gap-4 mb-8">
+          <Button
+            onClick={() => {
+              const csv = generateCSV(expenses, salary, budgetData);
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `budget-tracker-${new Date().toISOString().split('T')[0]}.csv`;
+              a.click();
+              window.URL.revokeObjectURL(url);
+            }}
+            variant="outline"
+            size="sm"
+            className="bg-green-500 hover:bg-green-600 text-white border-green-500"
+            disabled={expenses.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download CSV
+          </Button>
+          <WeeklySummaryDialog expenses={expenses} />
         </div>
 
         {/* Full Width Bottom Section */}

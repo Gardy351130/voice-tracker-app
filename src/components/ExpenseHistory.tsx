@@ -36,22 +36,7 @@ const ExpenseHistory = ({ expenses, salary, budgetData }: ExpenseHistoryProps) =
   return (
     <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-slate-700">Transaction History</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleDownloadCSV}
-              variant="outline"
-              size="sm"
-              className="bg-green-500 hover:bg-green-600 text-white border-green-500"
-              disabled={expenses.length === 0}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download CSV
-            </Button>
-            <WeeklySummaryDialog expenses={expenses} />
-          </div>
-        </div>
+        <CardTitle className="text-slate-700">Transaction History</CardTitle>
       </CardHeader>
       <CardContent>
         {expenses.length === 0 ? (
